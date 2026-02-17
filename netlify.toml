@@ -1,0 +1,15 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Scheduled Functions
+# Aggregate analytics runs daily at 1 AM UTC (processes yesterday's scans)
+[functions."aggregate-analytics"]
+  schedule = "0 1 * * *"
+
+# Cleanup orphan files runs daily at 2 AM UTC
+[functions."cleanup-orphan-files"]
+  schedule = "0 2 * * *"

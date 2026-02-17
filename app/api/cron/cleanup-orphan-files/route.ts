@@ -3,6 +3,17 @@ import { createServiceRoleSupabaseClient } from '@/lib/supabase/server';
 import { USER_FILES_BUCKET } from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
+  // Verify cron secret for security
+  const authHeader = request.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json(
+      { error: 'Unauthorized', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+
   const supabase = createServiceRoleSupabaseClient();
 
   const cutoff = new Date();
