@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { QRCode } from '@/types/qrcode';
+import type { QRCodeSummary } from '@/types/qrcode';
 import { useToast } from '@/components/ui/toast';
 
 interface QRCodeCardProps {
-  qrCode: QRCode;
+  qrCode: QRCodeSummary;
 }
 
 export function QRCodeCard({ qrCode }: QRCodeCardProps) {

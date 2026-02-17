@@ -25,3 +25,18 @@ export interface QRCode {
   updated_at: string;
   last_scanned_at: string | null;
 }
+
+// Subset of fields needed for list/card views
+export type QRCodeSummary = Pick<
+  QRCode,
+  | 'id'
+  | 'name'
+  | 'short_code'
+  | 'type'
+  | 'destination_url'
+  | 'qr_image_url'
+  | 'scan_count'
+  | 'is_active'
+  | 'created_at'
+  | 'last_scanned_at'
+>;

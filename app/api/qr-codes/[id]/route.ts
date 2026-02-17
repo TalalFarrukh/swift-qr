@@ -31,8 +31,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     if (error instanceof Error && 'errors' in error) {
       // ZodError-like
-      // @ts-expect-error - runtime check for zod error shape
-      const zodErrors = error.errors as { path: (string | number)[]; message: string }[];
+      const zodErrors = (error as any).errors as { path: (string | number)[]; message: string }[];
       return NextResponse.json(
         {
           error: 'Validation failed',

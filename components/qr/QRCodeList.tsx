@@ -1,8 +1,8 @@
 import { QRCodeCard } from './QRCodeCard';
-import type { QRCode } from '@/types/qrcode';
+import type { QRCodeSummary } from '@/types/qrcode';
 
 interface QRCodeListProps {
-  qrCodes: QRCode[];
+  qrCodes: QRCodeSummary[];
 }
 
 export function QRCodeList({ qrCodes }: QRCodeListProps) {

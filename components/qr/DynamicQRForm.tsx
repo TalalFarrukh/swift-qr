@@ -69,8 +69,7 @@ export function DynamicQRForm({
 
   useEffect(() => {
     if (mode === 'edit' && defaultValues && 'folderId' in defaultValues) {
-      // @ts-expect-error - folderId is not in CreateDynamicQRInput but is valid for edit
-      setValue('folderId', (defaultValues as any).folderId ?? null);
+      setValue('folderId' as any, (defaultValues as any).folderId ?? null);
     }
   }, [mode, defaultValues, setValue]);
 
@@ -99,11 +98,8 @@ export function DynamicQRForm({
               destinationUrl: normalized.destinationUrl,
               // These fields are only used on edit; they are allowed by the update schema.
               // We rely on uncontrolled inputs registered below so they appear in the raw form values.
-              // @ts-expect-error - extra fields only for update payload
               isPasswordProtected: (values as any).isPasswordProtected,
-              // @ts-expect-error - extra fields only for update payload
               password: (values as any).password,
-              // @ts-expect-error - extra fields only for update payload
               folderId: (values as any).folderId || null,
               customization: normalized.customization,
             }
@@ -288,7 +284,7 @@ export function DynamicQRForm({
             <select
               id="folderId"
               className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              {...register('folderId')}
+              {...register('folderId' as any)}
               disabled={isLoadingFolders}
             >
               <option value="">No folder</option>
@@ -310,7 +306,7 @@ export function DynamicQRForm({
               id="isPasswordProtected"
               type="checkbox"
               className="h-4 w-4 rounded border"
-              {...register('isPasswordProtected')}
+              {...register('isPasswordProtected' as any)}
             />
             <label className="text-sm" htmlFor="isPasswordProtected">
               Require a password to open this QR code
@@ -325,7 +321,7 @@ export function DynamicQRForm({
               type="password"
               autoComplete="off"
               className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              {...register('password')}
+              {...register('password' as any)}
             />
             <p className="text-xs text-muted-foreground">
               Leave blank to keep the current password. Uncheck the box to remove password protection.
