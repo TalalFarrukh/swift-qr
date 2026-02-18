@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('qr_codes')
-    .select('id, name, short_code, type, destination_url, qr_image_url, scan_count, is_active, created_at, last_scanned_at')
+    .select(
+      'id, name, short_code, type, destination_url, qr_image_url, scan_count, is_active, created_at, last_scanned_at, campaign_type, scan_limit, valid_from, valid_until',
+    )
     .eq('user_id', user.id)
     .eq('is_dynamic', true)
     .order('created_at', { ascending: false })
@@ -126,6 +128,10 @@ export async function POST(request: NextRequest) {
         bgColor,
         style,
       },
+      campaign_type: payload.campaignType ?? null,
+      scan_limit: payload.scanLimit ?? null,
+      valid_from: payload.validFrom ?? null,
+      valid_until: payload.validUntil ?? null,
       is_active: true,
     })
     .select()

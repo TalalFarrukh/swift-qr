@@ -12,7 +12,9 @@ export default async function DashboardHomePage() {
   const [{ data: qrCodes }, { count: totalQrCount }, { data: allForScans }] = await Promise.all([
     supabase
       .from('qr_codes')
-      .select('id, name, short_code, type, destination_url, qr_image_url, scan_count, is_active, created_at, last_scanned_at')
+      .select(
+        'id, name, short_code, type, destination_url, qr_image_url, scan_count, is_active, created_at, last_scanned_at, campaign_type, scan_limit, valid_from, valid_until',
+      )
       .eq('user_id', user.id)
       .eq('is_dynamic', true)
       .order('last_scanned_at', { ascending: false, nullsFirst: false })

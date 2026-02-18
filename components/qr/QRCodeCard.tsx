@@ -62,25 +62,48 @@ export function QRCodeCard({ qrCode }: QRCodeCardProps) {
     }
   };
 
+  const campaignType = qrCode.campaign_type as 'one-shot' | 'fidelity' | 'membership' | null | undefined;
+  const scanLimit = (qrCode.scan_limit as number | null) ?? null;
+
+  const renderCampaignBadge = () => {
+    if (!campaignType) return null;
+
+    let label = '';
+    if (campaignType === 'one-shot') {
+      label = 'One-shot';
+    } else if (campaignType === 'fidelity') {
+      label = scanLimit ? `Fidelity · ${qrCode.scan_count}/${scanLimit}` : 'Fidelity';
+    } else if (campaignType === 'membership') {
+      label = 'Membership';
+    }
+
+    return (
+      <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+        {label}
+      </span>
+    );
+  };
+
   return (
     <div className="rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 space-y-1">
           <Link
             href={`/qr/${qrCode.id}`}
             className="font-medium text-foreground hover:underline"
           >
             {qrCode.name}
           </Link>
-          <p className="mt-1 truncate text-sm text-muted-foreground">
+          <p className="truncate text-sm text-muted-foreground">
             {qrCode.destination_url ?? '—'}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {qrCode.scan_count} scans
             {qrCode.last_scanned_at
-              ? ` · Last scan ${new Date(qrCode.last_scanned_at).toLocaleDateString()}`
+              ? ` · Last scan ${new Date(qrCode.last_scanned_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
               : ''}
           </p>
+          {renderCampaignBadge()}
         </div>
         <div className="shrink-0">
           <img

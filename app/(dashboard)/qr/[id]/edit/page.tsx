@@ -37,6 +37,10 @@ export default async function QREditPage(props: QREditPageProps) {
       style: customization.style ?? 'classic',
     },
     folderId: qrCode.folder_id ?? null,
+    campaignType: (qrCode.campaign_type as 'one-shot' | 'fidelity' | 'membership' | null | undefined) ?? undefined,
+    scanLimit: qrCode.scan_limit ?? undefined,
+    validFrom: (qrCode.valid_from as string | null) ?? undefined,
+    validUntil: (qrCode.valid_until as string | null) ?? undefined,
   };
 
   return (

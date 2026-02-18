@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { CreateDynamicQRInput } from '@/lib/utils/validation';
 import { createDynamicQRSchema } from '@/lib/utils/validation';
 import { FileUploader } from '@/components/files/FileUploader';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { useToast } from '@/components/ui/toast';
 
 interface Folder {
@@ -73,6 +74,8 @@ export function DynamicQRForm({
     }
   }, [mode, defaultValues, setValue]);
 
+  const campaignType = watch('campaignType');
+
   const onSubmit = async (values: CreateDynamicQRInput) => {
     setErrorMessage(null);
     setIsSubmitting(true);
@@ -80,15 +83,33 @@ export function DynamicQRForm({
     try {
       const url = mode === 'edit' && qrCodeId ? `/api/qr-codes/${qrCodeId}` : '/api/qr-codes';
       const method = mode === 'edit' ? 'PUT' : 'POST';
-      const normalized = { ...values };
+      const normalized: any = { ...values };
 
       if (normalized.customization) {
         if (normalized.customization.logoUrl === '') {
           // Normalize empty string to undefined so it passes Zod optional URL
           // and we don't persist meaningless empty values.
           // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-          delete (normalized.customization as any).logoUrl;
+          delete normalized.customization.logoUrl;
         }
+      }
+
+      // Normalize campaign fields
+      if (!normalized.campaignType) {
+        delete normalized.campaignType;
+      }
+      if (normalized.campaignType !== 'fidelity') {
+        delete normalized.scanLimit;
+      }
+      if (normalized.campaignType !== 'membership') {
+        delete normalized.validFrom;
+        delete normalized.validUntil;
+      }
+      if (normalized.validFrom === '') {
+        delete normalized.validFrom;
+      }
+      if (normalized.validUntil === '') {
+        delete normalized.validUntil;
       }
 
       const body =
@@ -101,6 +122,10 @@ export function DynamicQRForm({
               isPasswordProtected: (values as any).isPasswordProtected,
               password: (values as any).password,
               folderId: (values as any).folderId || null,
+              campaignType: normalized.campaignType,
+              scanLimit: normalized.scanLimit,
+              validFrom: normalized.validFrom,
+              validUntil: normalized.validUntil,
               customization: normalized.customization,
             }
           : normalized;
@@ -178,6 +203,73 @@ export function DynamicQRForm({
         {errors.name ? (
           <p className="text-xs text-destructive">{errors.name.message}</p>
         ) : null}
+      </div>
+
+      <div className="space-y-3 rounded-lg border bg-card/40 p-3">
+        <p className="text-sm font-medium">Campaign (optional)</p>
+        <div className="space-y-1">
+          <label className="text-sm font-medium" htmlFor="campaignType">
+            Campaign type
+          </label>
+          <select
+            id="campaignType"
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            {...register('campaignType' as any)}
+          >
+            <option value="">None</option>
+            <option value="one-shot">One-shot (single use)</option>
+            <option value="fidelity">Fidelity (scan-limited)</option>
+            <option value="membership">Membership (date-limited)</option>
+          </select>
+        </div>
+
+        {campaignType === 'fidelity' && (
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="scanLimit">
+              Scan limit
+            </label>
+            <input
+              id="scanLimit"
+              type="number"
+              min={1}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              {...register('scanLimit' as any, { valueAsNumber: true })}
+            />
+            {errors.scanLimit ? (
+              <p className="text-xs text-destructive">{errors.scanLimit.message}</p>
+            ) : null}
+            <p className="text-xs text-muted-foreground">Maximum number of scans before this QR stops working.</p>
+          </div>
+        )}
+
+        {campaignType === 'membership' && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <DatePickerField
+                id="validFrom"
+                label="Valid from"
+                value={watch('validFrom' as any) ?? ''}
+                onChange={(v) => setValue('validFrom' as any, v, { shouldDirty: true })}
+                placeholder="Pick start date"
+              />
+              {errors.validFrom ? (
+                <p className="text-xs text-destructive">{errors.validFrom.message}</p>
+              ) : null}
+            </div>
+            <div className="space-y-1">
+              <DatePickerField
+                id="validUntil"
+                label="Valid until"
+                value={watch('validUntil' as any) ?? ''}
+                onChange={(v) => setValue('validUntil' as any, v, { shouldDirty: true })}
+                placeholder="Pick end date"
+              />
+              {errors.validUntil ? (
+                <p className="text-xs text-destructive">{errors.validUntil.message}</p>
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1">

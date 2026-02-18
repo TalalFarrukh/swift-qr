@@ -4,9 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export function DashboardNav() {
+  const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const stored = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const shouldBeDark = stored === 'dark' || (!stored && prefersDark);
@@ -16,7 +22,7 @@ export function DashboardNav() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, []);
+  }, [mounted]);
 
   const toggleDarkMode = () => {
     const newIsDark = !isDark;
@@ -60,8 +66,11 @@ export function DashboardNav() {
         onClick={toggleDarkMode}
         className="rounded-md border border-input bg-background p-1.5 text-muted-foreground hover:bg-muted"
         aria-label="Toggle dark mode"
+        suppressHydrationWarning
       >
-        {isDark ? (
+        {!mounted ? (
+          <span className="h-4 w-4" />
+        ) : isDark ? (
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"

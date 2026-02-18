@@ -163,6 +163,51 @@ export default async function QRAnalyticsPage(props: QRAnalyticsPageProps) {
     ? new Date(qrCode.last_scanned_at).toLocaleString()
     : 'Never';
 
+  const campaignType = (qrCode.campaign_type as 'one-shot' | 'fidelity' | 'membership' | null | undefined) ?? null;
+  const scanLimit = (qrCode.scan_limit as number | null) ?? null;
+  const validFrom = (qrCode.valid_from as string | null) ?? null;
+  const validUntil = (qrCode.valid_until as string | null) ?? null;
+
+  let campaignLabel = 'None';
+  let campaignStatus = 'N/A';
+  let campaignProgress: string | null = null;
+
+  const now = new Date();
+
+  if (campaignType) {
+    campaignLabel =
+      campaignType === 'one-shot'
+        ? 'One-shot'
+        : campaignType === 'fidelity'
+          ? 'Fidelity'
+          : campaignType === 'membership'
+            ? 'Membership'
+            : campaignType;
+
+    if (campaignType === 'membership') {
+      const fromDate = validFrom ? new Date(validFrom) : null;
+      const untilDate = validUntil ? new Date(validUntil) : null;
+      if (untilDate && untilDate < now) {
+        campaignStatus = 'Expired';
+      } else if (fromDate && fromDate > now) {
+        campaignStatus = 'Not yet active';
+      } else {
+        campaignStatus = 'Active';
+      }
+    } else if (campaignType === 'fidelity') {
+      if (scanLimit && totalScans >= scanLimit) {
+        campaignStatus = 'Completed';
+      } else if (scanLimit) {
+        campaignStatus = 'In progress';
+        campaignProgress = `${Math.min(100, Math.round((totalScans / scanLimit) * 100))}% of limit`;
+      } else {
+        campaignStatus = 'Active';
+      }
+    } else if (campaignType === 'one-shot') {
+      campaignStatus = totalScans >= 1 ? 'Used' : 'Unused';
+    }
+  }
+
   const renderBreakdownList = (items: Record<string, number>) => {
     const entries = Object.entries(items).sort((a, b) => b[1] - a[1]);
     if (entries.length === 0) {
@@ -214,10 +259,14 @@ export default async function QRAnalyticsPage(props: QRAnalyticsPageProps) {
           <p className="mt-1 text-2xl font-semibold">{timeline.length}</p>
         </div>
         <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Export</p>
+          <p className="text-sm font-medium text-muted-foreground">Campaign</p>
+          <p className="mt-1 text-sm font-semibold">
+            {campaignLabel} {campaignStatus !== 'N/A' ? `· ${campaignStatus}` : ''}
+          </p>
+          {campaignProgress && <p className="mt-1 text-xs text-muted-foreground">{campaignProgress}</p>}
           <Link
             href={`/api/analytics/${qrCode.id}/export`}
-            className="mt-1 inline-flex text-sm font-medium text-primary hover:underline"
+            className="mt-2 inline-flex text-xs font-medium text-primary hover:underline"
           >
             Download CSV
           </Link>

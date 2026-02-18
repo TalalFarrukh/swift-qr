@@ -55,12 +55,21 @@ QR code generator platform focused on dynamic QR codes, redirects, and analytics
 
    Open [http://localhost:3000](http://localhost:3000).
 
-## Deployment (Vercel)
+## Deployment (Netlify)
 
 1. Push the repo to GitHub (or another Git provider).
-2. In [Vercel](https://vercel.com), create a new project and import the repo.
+2. In [Netlify](https://netlify.com), create a new site and import the repo.
 3. Add the same environment variables as in `.env.local` (use production URLs for `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_REDIRECT_DOMAIN`).
-4. Deploy. Redirects will work at `https://your-domain.com/r/{shortCode}`.
+4. **Required for cron jobs**: Add `CRON_SECRET` (a random secret string) and `SITE_URL` (your Netlify site URL) to environment variables.
+5. Deploy. Redirects will work at `https://your-domain.netlify.app/r/{shortCode}`.
+
+### Scheduled Functions (Cron Jobs)
+
+The app includes two scheduled functions configured in `netlify.toml`:
+- **Analytics Aggregation**: Runs daily at 1 AM UTC to aggregate scan data
+- **Cleanup Orphan Files**: Runs daily at 2 AM UTC to remove unattached uploaded files
+
+These are automatically deployed as Netlify Scheduled Functions. Ensure `CRON_SECRET` is set in your Netlify environment variables for security.
 
 ## MVP Features
 
