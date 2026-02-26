@@ -51,7 +51,7 @@ export function DynamicQRForm({
   }, [mode]);
 
   const form = useForm<CreateDynamicQRInput>({
-    resolver: zodResolver(createDynamicQRSchema),
+    resolver: zodResolver(createDynamicQRSchema) as any,
     defaultValues: defaultValues ?? {
       name: '',
       type: 'url',
