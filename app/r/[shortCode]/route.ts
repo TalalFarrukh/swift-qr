@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/server';
 import { trackScan } from '@/lib/analytics/tracker';
+import { getPlanForTier } from '@/lib/plans';
+import { DEFAULT_SUBSCRIPTION_TIER } from '@/lib/constants';
 
 interface RouteParams {
   params: Promise<{ shortCode: string }>;
@@ -14,7 +16,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { data: qrCode, error } = await supabase
     .from('qr_codes')
     .select(
-      'id, destination_url, is_active, valid_from, valid_until, is_password_protected, campaign_type, scan_limit, scan_count',
+      'id, user_id, destination_url, is_active, valid_from, valid_until, is_password_protected, campaign_type, scan_limit, scan_count',
     )
     .eq('short_code', shortCode)
     .eq('is_dynamic', true)
@@ -41,6 +43,35 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (qrCode.valid_from && new Date(qrCode.valid_from) > now) {
     // Not yet active
     return new NextResponse('QR code is not yet valid', { status: 403 });
+  }
+
+  // Plan-based monthly scan limit (free tier)
+  if (qrCode.user_id) {
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('subscription_tier, subscription_status, qr_code_limit, campaign_limit')
+      .eq('id', qrCode.user_id as string)
+      .maybeSingle();
+
+    const plan = getPlanForTier(userRow?.subscription_tier ?? DEFAULT_SUBSCRIPTION_TIER, {
+      qrCodeLimit: userRow?.qr_code_limit ?? null,
+      campaignLimit: userRow?.campaign_limit ?? null,
+    });
+
+    if (plan.definition.tier === 'free' && plan.limits.scansPerMonth != null) {
+      const nowDate = new Date();
+      const monthStart = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
+
+      const { count: monthlyCount } = await supabase
+        .from('scans')
+        .select('*', { count: 'exact', head: true })
+        .eq('qr_code_id', qrCode.id)
+        .gte('scanned_at', monthStart.toISOString());
+
+      if ((monthlyCount ?? 0) >= plan.limits.scansPerMonth) {
+        return new NextResponse('This link is not available right now.', { status: 403 });
+      }
+    }
   }
 
   // Campaign-specific rules (one-shot, fidelity)
