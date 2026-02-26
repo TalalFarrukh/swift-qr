@@ -6,6 +6,8 @@ import { createDynamicQRSchema } from '@/lib/utils/validation';
 import { generateUniqueShortCode } from '@/lib/qr/shortCode';
 import { generateDynamicQrPng } from '@/lib/qr/generator';
 import { uploadQrImageToStorage } from '@/lib/qr/upload';
+import { getPlanForTier } from '@/lib/plans';
+import { DEFAULT_SUBSCRIPTION_TIER } from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request);
@@ -61,15 +63,35 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createServerSupabaseClient();
-  const { count } = await supabase
+
+  // Resolve user's subscription plan and limits
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('subscription_tier, subscription_status, qr_code_limit, campaign_limit')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const plan = getPlanForTier(userRow?.subscription_tier ?? DEFAULT_SUBSCRIPTION_TIER, {
+    qrCodeLimit: userRow?.qr_code_limit ?? null,
+    campaignLimit: userRow?.campaign_limit ?? null,
+  });
+
+  // Enforce per-user dynamic QR code limit
+  const { count: qrCount } = await supabase
     .from('qr_codes')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .eq('is_dynamic', true);
-  const limit = 10; // MVP: allow up to 10; later read from users.qr_code_limit
-  if ((count ?? 0) >= limit) {
+
+  const qrLimit = plan.limits.dynamicQRCodes;
+  if (qrLimit != null && (qrCount ?? 0) >= qrLimit) {
     return NextResponse.json(
-      { error: 'QR code limit reached', code: 'LIMIT_EXCEEDED' },
+      {
+        error: 'QR code limit reached for your current plan.',
+        code: 'QR_LIMIT_REACHED',
+        plan: plan.definition.tier,
+        limit: qrLimit,
+      },
       { status: 403 },
     );
   }
@@ -96,6 +118,29 @@ export async function POST(request: NextRequest) {
       { error: 'Invalid request', code: 'BAD_REQUEST' },
       { status: 400 },
     );
+  }
+
+  // Enforce per-user campaign limit when creating a campaign-enabled QR
+  if (payload.campaignType) {
+    const { count: campaignCount } = await supabase
+      .from('qr_codes')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_dynamic', true)
+      .not('campaign_type', 'is', null);
+
+    const campaignLimit = plan.limits.campaigns;
+    if (campaignLimit != null && (campaignCount ?? 0) >= campaignLimit) {
+      return NextResponse.json(
+        {
+          error: 'Campaign limit reached for your current plan.',
+          code: 'CAMPAIGN_LIMIT_REACHED',
+          plan: plan.definition.tier,
+          limit: campaignLimit,
+        },
+        { status: 403 },
+      );
+    }
   }
 
   const baseUrl =
