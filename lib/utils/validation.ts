@@ -37,7 +37,12 @@ const customizationSchema = z
   })
   .optional();
 
-const campaignTypeSchema = z.enum(['one-shot', 'fidelity', 'membership']).optional();
+const rawCampaignTypeSchema = z.enum(['one-shot', 'fidelity', 'membership']);
+
+const campaignTypeSchema = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  rawCampaignTypeSchema.optional(),
+);
 
 const campaignFieldsSchema = z.object({
   campaignType: campaignTypeSchema,
